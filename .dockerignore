@@ -1,4 +1,5 @@
 .git
+*.Dockerfile
 Dockerfile
 bin
 obj
