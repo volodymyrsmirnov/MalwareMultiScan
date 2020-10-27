@@ -1,47 +1,94 @@
-version: "3"
+version: "3.8"
 
 services:
-  clamav-backend:
-    image: ${DOCKER_IMAGE_PREFIX-mindcollapse}/malware-multi-scan-worker-clamav
+  rabbitmq:
+    image: rabbitmq:3
+    restart: on-failure
+    expose:
+      - "5672"
+    volumes:
+      - rabbitmq_etc/:/etc/rabbitmq/
+      - rabbitmq_data:/var/lib/rabbitmq/
+      - rabbitmq_logs/:/var/log/rabbitmq/
+    
+  mongodb:
+    image: mongo:4
+    restart: on-failure
+    expose:
+      - "27019"
+    volumes:
+      - mongodb:/data
+        
+  ui:
+    image: mindcollapse/malware-multi-scan-ui
+    restart: on-failure
+    ports:
+      - "8888:8888" 
+    expose:
+      - "8888"
+    depends_on:
+      - api
+    environment:
+      - "API_URL=http://api:5000"
+      - "NUXT_HOST=0.0.0.0"
+      - "NUXT_PORT=8888"
+    build:
+      context: MalwareMultiScan.Ui
+      dockerfile: Dockerfile
+
+  api:
+    image: mindcollapse/malware-multi-scan-api
+    restart: on-failure
+    expose:
+      - "5000"
+    depends_on:
+      - rabbitmq
+      - mongodb
+    environment:
+      - "ConnectionStrings__RabbitMQ=host=rabbitmq;timeout=120"
+      - "ConnectionStrings__Mongo=mongodb://mongodb:27017?connectTimeoutMS=120000"
+      - "BackendsConfiguration=/etc/backends.yaml"
+    volumes:
+      - "./MalwareMultiScan.Api/backends.yaml:/etc/backends.yaml:ro"
+    build:
+      context: .
+      dockerfile: MalwareMultiScan.Api/Dockerfile
+  
+  dummy-scanner:
+    image: mindcollapse/malware-multi-scan-scanner
+    restart: on-failure
+    depends_on:
+      - rabbitmq
+    environment:
+      - "ConnectionStrings__RabbitMQ=host=rabbitmq;prefetchcount=1;timeout=120"
+    build:
+      context: .
+      dockerfile: MalwareMultiScan.Scanner/Dockerfile
+  
+  clamav-scanner:
+    image: mindcollapse/malware-multi-scan-scanner-clamav
+    restart: on-failure
+    depends_on:
+      - dummy-scanner
+    environment:
+      - "ConnectionStrings__RabbitMQ=host=rabbitmq;prefetchcount=1;timeout=120"
     build:
       context: MalwareMultiScan.Backends/Dockerfiles
       dockerfile: Clamav.Dockerfile
       
-  windows-defender-backend:
-    image: ${DOCKER_IMAGE_PREFIX-mindcollapse}/malware-multi-scan-worker-windows-defender
+  windows-defender-scanner:
+    image: mindcollapse/malware-multi-scan-scanner-windows-defender
+    restart: on-failure
+    depends_on:
+      - dummy-scanner
+    environment:
+      - "ConnectionStrings__RabbitMQ=host=rabbitmq;prefetchcount=1;timeout=120"
     build:
       context: MalwareMultiScan.Backends/Dockerfiles
       dockerfile: WindowsDefender.Dockerfile
 
-# SCAN BACKENDS BELOW DISABLE DUE TO THE VENDOR LICENSING POLICY    
-# RE-ENABLE ONLY AFTER CHECKING EULA POLICY & BUYING THE LICENSE
-#
-#  comodo-backend:
-#    image: ${DOCKER_IMAGE_PREFIX-mindcollapse}/malware-multi-scan-worker-comodo
-#    build:
-#      context: MalwareMultiScan.Backends/Dockerfiles
-#      dockerfile: Comodo.Dockerfile
-#      
-#  drweb-backend:
-#    image: ${DOCKER_IMAGE_PREFIX-mindcollapse}/malware-multi-scan-worker-drweb
-#    build:
-#      context: MalwareMultiScan.Backends/Dockerfiles
-#      dockerfile: DrWeb.Dockerfile
-#      
-#  kes-backend:
-#    image: ${DOCKER_IMAGE_PREFIX-mindcollapse}/malware-multi-scan-worker-kes
-#    build:
-#      context: MalwareMultiScan.Backends/Dockerfiles
-#      dockerfile: KES.Dockerfile
-#      
-#  mcafee-backend:
-#    image: ${DOCKER_IMAGE_PREFIX-mindcollapse}/malware-multi-scan-worker-mcafee
-#    build:
-#      context: MalwareMultiScan.Backends/Dockerfiles
-#      dockerfile: McAfee.Dockerfile
-#      
-#  sophos-backend:
-#    image: ${DOCKER_IMAGE_PREFIX-mindcollapse}/malware-multi-scan-worker-sophos
-#    build:
-#      context: MalwareMultiScan.Backends/Dockerfiles
-#      dockerfile: Sophos.Dockerfile
+volumes:
+  mongodb:
+  rabbitmq_etc:
+  rabbitmq_data:
+  rabbitmq_logs:

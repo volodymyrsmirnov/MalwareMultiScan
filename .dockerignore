@@ -3,3 +3,7 @@
 Dockerfile
 bin
 obj
+dist
+node_modules
+.nuxt
+MalwareMultiScan.Ui
