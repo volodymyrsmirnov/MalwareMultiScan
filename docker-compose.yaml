@@ -45,8 +45,8 @@ services:
       - rabbitmq
       - mongodb
     environment:
-      - "ConnectionStrings__RabbitMQ=host=rabbitmq"
-      - "ConnectionStrings__Mongo=mongodb://mongodb:27017"
+      - "ConnectionStrings__RabbitMQ=host=rabbitmq;timeout=120"
+      - "ConnectionStrings__Mongo=mongodb://mongodb:27017?connectTimeoutMS=120000"
       - "BackendsConfiguration=/etc/backends.yaml"
     volumes:
       - "./MalwareMultiScan.Api/backends.yaml:/etc/backends.yaml:ro"
@@ -55,23 +55,23 @@ services:
       dockerfile: MalwareMultiScan.Api/Dockerfile
   
   dummy-scanner:
-    image: mindcollapse/malware-multi-scan-scanner-dummy
+    image: mindcollapse/malware-multi-scan-scanner
     restart: on-failure
     depends_on:
       - rabbitmq
     environment:
-      - "ConnectionStrings__RabbitMQ=host=rabbitmq;prefetchcount=1"
+      - "ConnectionStrings__RabbitMQ=host=rabbitmq;prefetchcount=1;timeout=120"
     build:
-      context: MalwareMultiScan.Backends/Dockerfiles
-      dockerfile: Dummy.Dockerfile
+      context: .
+      dockerfile: MalwareMultiScan.Scanner/Dockerfile
   
   clamav-scanner:
     image: mindcollapse/malware-multi-scan-scanner-clamav
     restart: on-failure
     depends_on:
-      - rabbitmq
+      - dummy-scanner
     environment:
-      - "ConnectionStrings__RabbitMQ=host=rabbitmq;prefetchcount=1"
+      - "ConnectionStrings__RabbitMQ=host=rabbitmq;prefetchcount=1;timeout=120"
     build:
       context: MalwareMultiScan.Backends/Dockerfiles
       dockerfile: Clamav.Dockerfile
@@ -80,9 +80,9 @@ services:
     image: mindcollapse/malware-multi-scan-scanner-windows-defender
     restart: on-failure
     depends_on:
-      - rabbitmq
+      - dummy-scanner
     environment:
-      - "ConnectionStrings__RabbitMQ=host=rabbitmq;prefetchcount=1"
+      - "ConnectionStrings__RabbitMQ=host=rabbitmq;prefetchcount=1;timeout=120"
     build:
       context: MalwareMultiScan.Backends/Dockerfiles
       dockerfile: WindowsDefender.Dockerfile
