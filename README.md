@@ -6,6 +6,10 @@ Self-hosted [VirusTotal](https://www.virustotal.com/) wannabe API for scanning U
 
 [Check out the demo UI](https://malware-multi-scan.lab.smirnov.im) with ClamAV, Dummy and Windows Defender scan backends. The demo is running on a cheap Vultr node, so it might get slow or unavailable occasionally. 
 
+**IMPORTANT**: Demo UI is not available till the completion of the beta phase. 
+
+[TOC]
+
 ## Introduction
 
 I faced a need to scan user-uploaded files in one of my work projects in an automated mode to ensure they don't contain any malware. Using VirusTotal was not an option because of a) legal restrictions and data residency limitations b) scanning by hash-sums would not be sufficient because the majority of files are generated / modified by users. 
@@ -52,7 +56,7 @@ Configuration of API and Scanners is performed by passing the environment variab
 
 * `API_URL=http://localhost:5000` - Absolute URL incl. port number for the running instance of MalwareMultiScan.Api.  
 
-### API Endpoints: 
+### API Endpoints
 
 * POST `/api/queue/url` with `url` parameter passed via the form data. Returns `201 Accepted` response with a [ScanResult](MalwareMultiScan.Api/Data/Models/ScanResult.cs) or `400 Bad Request` error.
 
@@ -68,10 +72,10 @@ Configuration of API and Scanners is performed by passing the environment variab
 | [Comodo](https://www.comodo.com/home/internet-security/antivirus-for-linux.php) | [Comodo.Dockerfile](MalwareMultiScan.Backends/Dockerfiles/Comodo.Dockerfile) | :white_large_square: | |
 | [DrWeb](https://download.drweb.com/linux/?lng=en) | [DrWeb.Dockerfile](MalwareMultiScan.Backends/Dockerfiles/DrWeb.Dockerfile) | :white_large_square: | Pass licence key to the DRWEB_KEY build arg. |
 | Dummy | [Dockerfile](MalwareMultiScan.Scanner/Dockerfile) | :white_check_mark: | Scan backend made for testing. Returns Malware.Dummy.Result threat for every scan after 5 seconds. |
-| [Kaspersky Endpoint Security](https://support.kaspersky.com/kes10linux) | [KES.Dockerfile](MalwareMultiScan.Backends/Dockerfiles/KES.Dockerfile) | :white_large_square: | Pass licence key to the KES_KEY build arg. KES 11 does not work in Docker. |
+| [KES](https://support.kaspersky.com/kes10linux) | [KES.Dockerfile](MalwareMultiScan.Backends/Dockerfiles/KES.Dockerfile) | :white_large_square: | Pass licence key to the KES_KEY build arg. KES 11 does not work in Docker. |
 | [McAfee](https://www.mcafee.com/enterprise/en-us/products/virusscan-enterprise-for-linux.html) | [McAfee.Dockerfile](MalwareMultiScan.Backends/Dockerfiles/McAfee.Dockerfile) | :white_large_square: | |
 | [Sophos](https://www.sophos.com/en-us/support/documentation/sophos-anti-virus-for-linux.aspx) | [Sophos.Dockerfile](MalwareMultiScan.Backends/Dockerfiles/Sophos.Dockerfile) | :white_large_square: | |
-| [Windows Defender](https://github.com/taviso/loadlibrary#windows-defender) | [WindowsDefender.Dockerfile](MalwareMultiScan.Backends/Dockerfiles/WindowsDefender.Dockerfile) | :white_check_mark: | |
+| [Defender](https://github.com/taviso/loadlibrary#windows-defender) | [WindowsDefender.Dockerfile](MalwareMultiScan.Backends/Dockerfiles/WindowsDefender.Dockerfile) | :white_check_mark: | |
 
 More scan backends can be added in the future. Some of popular ones do not have command line scanning utility, Linux version, or don't start in Docker container. Feel free to raise an issue if you know any in addition to the list above.
 
@@ -93,7 +97,7 @@ More scan backends can be added in the future. Some of popular ones do not have 
 
 * [MalwareMultiScan.Backends](MalwareMultiScan.Backends). Shared components between API and Worker. Includes Dockerfiles and implementation classes for third-party vendor scan backends.
 
-* [MalwareMultiScan.Scanner](MalwareMultiScan.Scanner). .NET Core Worker service that subscribes to messages corresponding to the backend ID, fires up scanning command-line utility and parses the output. See [Dockerfile](MalwareMultiScan.Scanner/Dockerfile). The image of MalwareMultiScan.Scanner acts as a basic image for the rest of scan backends. Check Dockerfiles from the table above for details.
+* [MalwareMultiScan.Scanner](MalwareMultiScan.Scanner). .NET Core Worker service that subscribes to messages corresponding to the backend ID, fires up scanning command-line utility and parses the output. See [Dockerfile](MalwareMultiScan.Scanner/Dockerfile). The image of MalwareMultiScan.Scanner acts as a basic image for the rest of scan backends. Check Dockerfiles from the [table above](#supported-scan-engines) for details.
 
 * [MalwareMultiScan.Ui](MalwareMultiScan.Ui). Nuxt.js TypeScript SPA for demoing the API capabilities. See [Dockerfile](MalwareMultiScan.Ui/Dockerfile). 
  
