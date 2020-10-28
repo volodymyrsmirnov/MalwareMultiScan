@@ -4,10 +4,6 @@ Self-hosted [VirusTotal](https://www.virustotal.com/) wannabe API for scanning U
 
 ![MalwareMultiScan UI](.github/img/malware-multi-scan-ui.gif)
 
-[Check out the demo UI](https://malware-multi-scan.lab.smirnov.im) with ClamAV, Dummy, and Windows Defender scan backends. The demo is running on a cheap Vultr node, so it might get slow or unavailable occasionally. 
-
-**IMPORTANT**: Demo UI is not available till the completion of the beta phase. 
-
 ## Introduction
 
 I faced a need to scan user-uploaded files in one of my work projects in an automated mode to ensure they don't contain any malware. Using VirusTotal was not an option because of a) legal restrictions and data residency limitations b) scanning by hash-sums would not be sufficient because the majority of files are generated / modified by users. 
