@@ -99,3 +99,6 @@ More scan backends can be added in the future. Some of the popular ones do not h
 
 * [MalwareMultiScan.Ui](MalwareMultiScan.Ui) - Nuxt.js TypeScript SPA for demoing the API capabilities. See [Dockerfile](MalwareMultiScan.Ui/Dockerfile). 
  
+ ## Plans
+ 
+ See [issues](issues) for the list of planned features, bug-fixes, and improvements.
