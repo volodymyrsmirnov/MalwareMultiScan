@@ -87,6 +87,63 @@ services:
       context: MalwareMultiScan.Backends/Dockerfiles
       dockerfile: WindowsDefender.Dockerfile
 
+# IMPORTANT: FOLLOWING SCAN BACKENDS SHOULD BE ENABLED ONLY IF YOU HAVE A VALID LICENSE
+# IMPORTANT: PLEASE CHECK VENDORS EULA TO STAY COMPLIANT WITH USAGE POLICY
+#  comodo-scanner:
+#    image: mindcollapse/malware-multi-scan-scanner-windows-comodo
+#    restart: on-failure
+#    depends_on:
+#      - dummy-scanner
+#    environment:
+#      - "ConnectionStrings__RabbitMQ=host=rabbitmq;prefetchcount=1;timeout=120"
+#    build:
+#      context: MalwareMultiScan.Backends/Dockerfiles
+#      dockerfile: Comodo.Dockerfile
+#      
+#  drweb-scanner:
+#    image: mindcollapse/malware-multi-scan-scanner-windows-drweb
+#    restart: on-failure
+#    depends_on:
+#      - dummy-scanner
+#    environment:
+#      - "ConnectionStrings__RabbitMQ=host=rabbitmq;prefetchcount=1;timeout=120"
+#    build:
+#      context: MalwareMultiScan.Backends/Dockerfiles
+#      dockerfile: DrWeb.Dockerfile
+#      
+#  kes-scanner:
+#    image: mindcollapse/malware-multi-scan-scanner-windows-kes
+#    restart: on-failure
+#    depends_on:
+#      - dummy-scanner
+#    environment:
+#      - "ConnectionStrings__RabbitMQ=host=rabbitmq;prefetchcount=1;timeout=120"
+#    build:
+#      context: MalwareMultiScan.Backends/Dockerfiles
+#      dockerfile: KES.Dockerfile
+#      
+#  mcafee-scanner:
+#    image: mindcollapse/malware-multi-scan-scanner-windows-mcafeee
+#    restart: on-failure
+#    depends_on:
+#      - dummy-scanner
+#    environment:
+#      - "ConnectionStrings__RabbitMQ=host=rabbitmq;prefetchcount=1;timeout=120"
+#    build:
+#      context: MalwareMultiScan.Backends/Dockerfiles
+#      dockerfile: McAfee.Dockerfile
+#      
+#  sophos-scanner:
+#    image: mindcollapse/malware-multi-scan-scanner-windows-sophos
+#    restart: on-failure
+#    depends_on:
+#      - dummy-scanner
+#    environment:
+#      - "ConnectionStrings__RabbitMQ=host=rabbitmq;prefetchcount=1;timeout=120"
+#    build:
+#      context: MalwareMultiScan.Backends/Dockerfiles
+#      dockerfile: Sophos.Dockerfile
+
 volumes:
   mongodb:
   rabbitmq_etc:
