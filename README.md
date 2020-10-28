@@ -101,4 +101,4 @@ More scan backends can be added in the future. Some of the popular ones do not h
  
  ## Plans
  
- See [issues](issues) for the list of planned features, bug-fixes, and improvements.
+ See [issues](https://github.com/mindcollapse/MalwareMultiScan/issues) for the list of planned features, bug-fixes, and improvements.
