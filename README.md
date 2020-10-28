@@ -18,7 +18,7 @@ In the end, it's nothing but the set of Docker containers running the agent. Tha
 
 ## Installation & Usage
 
-**IMPORTANT**: MalwareMultiScan is not intended as a publicly-facing API / UI. It has (intentionally) no authorization, authentication, rate-limiting, and logging. Therefore, it should be used only as an internal / private API or behind the restrictive API gateway.
+**IMPORTANT**: MalwareMultiScan is not intended as a publicly-facing API / UI. It has (intentionally) no authorization, authentication, rate-limiting, or logging. Therefore, it should be used only as an internal / private API or behind the restrictive API gateway.
 
 See [components](#components) chapter below and the [docker-compose.yaml](docker-compose.yaml) file.
 
