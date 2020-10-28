@@ -8,8 +8,6 @@ Self-hosted [VirusTotal](https://www.virustotal.com/) wannabe API for scanning U
 
 **IMPORTANT**: Demo UI is not available till the completion of the beta phase. 
 
-[TOC]
-
 ## Introduction
 
 I faced a need to scan user-uploaded files in one of my work projects in an automated mode to ensure they don't contain any malware. Using VirusTotal was not an option because of a) legal restrictions and data residency limitations b) scanning by hash-sums would not be sufficient because the majority of files are generated / modified by users. 
