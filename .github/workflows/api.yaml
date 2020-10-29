@@ -30,7 +30,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          context: MalwareMultiScan.Api
+          context: .
           file: MalwareMultiScan.Api/Dockerfile
           platforms: linux/amd64
           tags: mindcollapse/malware-multi-scan-api:latest
