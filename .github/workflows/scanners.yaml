@@ -1,4 +1,4 @@
-name: Scanners
+name: Scanning Backends
 
 on:
   schedule:
