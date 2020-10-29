@@ -1,0 +1,11 @@
+version: 2
+updates:
+  - package-ecosystem: "npm" 
+    directory: "/MalwareMultiScan.Ui"
+    schedule:
+      interval: "daily"
+      
+  - package-ecosystem: "nuget" 
+    directory: "/"
+    schedule:
+      interval: "daily"
