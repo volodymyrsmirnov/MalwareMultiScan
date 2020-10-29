@@ -1,5 +1,7 @@
 # MalwareMultiScan
 
+![Scanners](https://github.com/mindcollapse/MalwareMultiScan/workflows/Scanners/badge.svg) ![API](https://github.com/mindcollapse/MalwareMultiScan/workflows/API/badge.svg) ![UI](https://github.com/mindcollapse/MalwareMultiScan/workflows/UI/badge.svg) ![Tests](https://github.com/mindcollapse/MalwareMultiScan/workflows/Tests/badge.svg?event=push)
+
 Self-hosted [VirusTotal](https://www.virustotal.com/) wannabe API for scanning URLs and files by multiple antivirus solutions.
 
 ![MalwareMultiScan UI](.github/img/malware-multi-scan-ui.gif)
