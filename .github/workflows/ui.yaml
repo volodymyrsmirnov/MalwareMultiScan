@@ -31,6 +31,6 @@ jobs:
         with:
           push: true
           context: MalwareMultiScan.Ui
-          file: Dockerfile
+          file: MalwareMultiScan.Ui/Dockerfile
           platforms: linux/amd64
           tags: mindcollapse/malware-multi-scan-ui:latest
