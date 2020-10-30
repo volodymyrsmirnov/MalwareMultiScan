@@ -22,6 +22,12 @@ In the end, it's nothing but the set of Docker containers running the agent. Tha
 
 **IMPORTANT**: MalwareMultiScan is not intended as a publicly-facing API / UI. It has (intentionally) no authorization, authentication, rate-limiting, or logging. Therefore, it should be used only as an internal / private API or behind the restrictive API gateway.
 
+Whole solution can be started with `docker-compose up` executed in a root folder of repository.
+
+It can be also deployed to the Docker Swarm cluster by using the command `docker stack deploy malware-multi-scan --compose-file docker-compose.yaml`.
+
+After the start the Demo Web UI will become available under http://localhost:8888.
+
 See [components](#components) chapter below and the [docker-compose.yaml](docker-compose.yaml) file.
 
 ### Configuration
@@ -52,17 +58,21 @@ Configuration of API and Scanners is performed by passing the environment variab
 
 * `MaxScanningTime=60` - Scan time limit. It is used not just for actual scanning but also for getting the file.
 
+* `WorkerCount=4` - Number of workers for parallel scanning.
+
 #### MalwareMultiScan.Ui
 
 * `API_URL=http://localhost:5000` - Absolute URL incl. port number for the running instance of MalwareMultiScan.Api.  
 
 ### API Endpoints
 
-* POST `/api/queue/url` with a `url` parameter passed via the form data. Returns `201 Accepted` response with a [ScanResult](MalwareMultiScan.Api/Data/Models/ScanResult.cs) or `400 Bad Request` error.
+* POST `/api/queue/url` with a `url` parameter passed via the form data.. Returns `201 Accepted` response with a [ScanResult](MalwareMultiScan.Api/Data/Models/ScanResult.cs) or `400 Bad Request` error.
 
- * POST `/api/queue/file` with a `file` parameter passed via the form data. Returns `201 Accepted` response with a [ScanResult](MalwareMultiScan.Api/Data/Models/ScanResult.cs) or `400 Bad Request` error.
+* POST `/api/queue/file` with a `file` parameter passed via the form data. Returns `201 Accepted` response with a [ScanResult](MalwareMultiScan.Api/Data/Models/ScanResult.cs) or `400 Bad Request` error.
 
 * GET `/api/results/{result-id}` where `{result-id}` corresponds to the id value of a [ScanResult](MalwareMultiScan.Api/Data/Models/ScanResult.cs). Returns `200 OK` response with a [ScanResult](MalwareMultiScan.Api/Data/Models/ScanResult.cs) or `404 Not Found` error.
+
+Both `/api/queue/url` and `/api/queue/file` also accept an optional `callbackUrl` parameter with the http(s) URL in it. This URL will be requested by the POST method with JSON serialized [ScanResult](MalwareMultiScan.Api/Data/Models/ScanResult.cs) in a body on every update from scan backends.
 
 ## Supported Scan Engines
 
@@ -89,7 +99,7 @@ More scan backends can be added in the future. Some of the popular ones do not h
 
 * **Docker** and **docker-compose** running under Windows (in Linux containers mode), Linux, or OSX. Docker Compose is needed only for test / local deployments.
 
-* **Optional**: DockerSwarm / Kubernetes cluster for scaling up the scanning capacities. A simultaneous scan by a single node is not supported, yet load-balancing is possible by the built-in orchestrators' round-robin routing.
+* **Optional**: DockerSwarm / Kubernetes cluster for scaling up the scanning capacities.
 
 ### Parts
 
