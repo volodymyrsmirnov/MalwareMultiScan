@@ -13,12 +13,12 @@ services:
     volumes:
       - mongodb:/data
       
+  # See https://github.com/hashicorp/consul/blob/master/demo/docker-compose-cluster/docker-compose.yml
+  # for a production-ready config.
   consul:
     image: consul:1.8
     restart: on-failure
-    volumes:
-      - consul:/consul/data
-    command: consul agent -server -bootstrap -client 0.0.0.0 
+    command: consul agent -dev -log-level=info -bind=0.0.0.0 -client=0.0.0.0
         
   ui:
     image: mindcollapse/malware-multi-scan-ui
@@ -154,4 +154,3 @@ services:
 volumes:
   mongodb:
   redis:
-  consul:
