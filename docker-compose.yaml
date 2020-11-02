@@ -18,7 +18,7 @@ services:
   consul:
     image: consul:1.8
     restart: on-failure
-    command: consul agent -dev -log-level=info -bind=0.0.0.0 -client=0.0.0.0
+    command: consul agent -dev -log-level=info -client=0.0.0.0
         
   ui:
     image: mindcollapse/malware-multi-scan-ui
