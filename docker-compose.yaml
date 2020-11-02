@@ -1,23 +1,24 @@
 version: "3.8"
 
 services:
-  rabbitmq:
-    image: rabbitmq:3
+  redis:
+    image: redis:6
     restart: on-failure
-    expose:
-      - "5672"
     volumes:
-      - rabbitmq_etc/:/etc/rabbitmq/
-      - rabbitmq_data:/var/lib/rabbitmq/
-      - rabbitmq_logs/:/var/log/rabbitmq/
-    
+    - redis:/data
+   
   mongodb:
     image: mongo:4
     restart: on-failure
-    expose:
-      - "27019"
     volumes:
       - mongodb:/data
+      
+  # See https://github.com/hashicorp/consul/blob/master/demo/docker-compose-cluster/docker-compose.yml
+  # for a production-ready config.
+  consul:
+    image: consul:1.8
+    restart: on-failure
+    command: consul agent -dev -log-level=info -bind=0.0.0.0 -client=0.0.0.0
         
   ui:
     image: mindcollapse/malware-multi-scan-ui
@@ -39,17 +40,14 @@ services:
   api:
     image: mindcollapse/malware-multi-scan-api
     restart: on-failure
-    expose:
-      - "5000"
     depends_on:
-      - rabbitmq
+      - consul
+      - redis
       - mongodb
     environment:
-      - "ConnectionStrings__RabbitMQ=host=rabbitmq;timeout=120"
-      - "ConnectionStrings__Mongo=mongodb://mongodb:27017?connectTimeoutMS=120000"
-      - "BackendsConfiguration=/etc/backends.yaml"
-    volumes:
-      - "./MalwareMultiScan.Api/backends.yaml:/etc/backends.yaml:ro"
+      - "REDIS_ADDRESS=redis:6379"
+      - "CONSUL_ADDRESS=http://consul:8500"
+      - "MONGO_ADDRESS=mongodb://mongodb:27017?connectTimeoutMS=120000"
     build:
       context: .
       dockerfile: MalwareMultiScan.Api/Dockerfile
@@ -58,9 +56,11 @@ services:
     image: mindcollapse/malware-multi-scan-scanner
     restart: on-failure
     depends_on:
-      - rabbitmq
+      - consul
+      - redis
     environment:
-      - "ConnectionStrings__RabbitMQ=host=rabbitmq;prefetchcount=1;timeout=120"
+      - "REDIS_ADDRESS=redis:6379"
+      - "CONSUL_ADDRESS=http://consul:8500"
     build:
       context: .
       dockerfile: MalwareMultiScan.Scanner/Dockerfile
@@ -71,7 +71,8 @@ services:
     depends_on:
       - dummy-scanner
     environment:
-      - "ConnectionStrings__RabbitMQ=host=rabbitmq;prefetchcount=1;timeout=120"
+      - "REDIS_ADDRESS=redis:6379"
+      - "CONSUL_ADDRESS=http://consul:8500"
     build:
       context: MalwareMultiScan.Backends/Dockerfiles
       dockerfile: Clamav.Dockerfile
@@ -82,7 +83,8 @@ services:
     depends_on:
       - dummy-scanner
     environment:
-      - "ConnectionStrings__RabbitMQ=host=rabbitmq;prefetchcount=1;timeout=120"
+      - "REDIS_ADDRESS=redis:6379"
+      - "CONSUL_ADDRESS=http://consul:8500"
     build:
       context: MalwareMultiScan.Backends/Dockerfiles
       dockerfile: WindowsDefender.Dockerfile
@@ -95,7 +97,8 @@ services:
 #    depends_on:
 #      - dummy-scanner
 #    environment:
-#      - "ConnectionStrings__RabbitMQ=host=rabbitmq;prefetchcount=1;timeout=120"
+#      - "REDIS_ADDRESS=redis:6379"
+#      - "CONSUL_ADDRESS=http://consul:8500"
 #    build:
 #      context: MalwareMultiScan.Backends/Dockerfiles
 #      dockerfile: Comodo.Dockerfile
@@ -106,7 +109,8 @@ services:
 #    depends_on:
 #      - dummy-scanner
 #    environment:
-#      - "ConnectionStrings__RabbitMQ=host=rabbitmq;prefetchcount=1;timeout=120"
+#      - "REDIS_ADDRESS=redis:6379"
+#      - "CONSUL_ADDRESS=http://consul:8500"
 #    build:
 #      context: MalwareMultiScan.Backends/Dockerfiles
 #      dockerfile: DrWeb.Dockerfile
@@ -117,7 +121,8 @@ services:
 #    depends_on:
 #      - dummy-scanner
 #    environment:
-#      - "ConnectionStrings__RabbitMQ=host=rabbitmq;prefetchcount=1;timeout=120"
+#      - "REDIS_ADDRESS=redis:6379"
+#      - "CONSUL_ADDRESS=http://consul:8500"
 #    build:
 #      context: MalwareMultiScan.Backends/Dockerfiles
 #      dockerfile: KES.Dockerfile
@@ -128,7 +133,8 @@ services:
 #    depends_on:
 #      - dummy-scanner
 #    environment:
-#      - "ConnectionStrings__RabbitMQ=host=rabbitmq;prefetchcount=1;timeout=120"
+#      - "REDIS_ADDRESS=redis:6379"
+#      - "CONSUL_ADDRESS=http://consul:8500"
 #    build:
 #      context: MalwareMultiScan.Backends/Dockerfiles
 #      dockerfile: McAfee.Dockerfile
@@ -139,13 +145,12 @@ services:
 #    depends_on:
 #      - dummy-scanner
 #    environment:
-#      - "ConnectionStrings__RabbitMQ=host=rabbitmq;prefetchcount=1;timeout=120"
+#      - "REDIS_ADDRESS=redis:6379"
+#      - "CONSUL_ADDRESS=http://consul:8500"
 #    build:
 #      context: MalwareMultiScan.Backends/Dockerfiles
 #      dockerfile: Sophos.Dockerfile
 
 volumes:
   mongodb:
-  rabbitmq_etc:
-  rabbitmq_data:
-  rabbitmq_logs:
+  redis:
