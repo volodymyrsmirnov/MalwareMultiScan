@@ -10,6 +10,8 @@ Self-hosted [VirusTotal](https://www.virustotal.com/) wannabe API for scanning U
 
 The demo is running on a cheap Vultr node, so it might get slow or unavailable occasionally. 
 
+**IMPORTANT**: version 1.5 introduces breaking changes in containers configuration and docker-compose.yaml layout. Please see [releases](https://github.com/mindcollapse/MalwareMultiScan/releases) page and changelog of [docker-compose.yaml](https://github.com/mindcollapse/MalwareMultiScan/commits/master/docker-compose.yaml) and [README.md](https://github.com/mindcollapse/MalwareMultiScan/commits/master/README.md) for the additional details. 
+
 ## Introduction
 
 I faced a need to scan user-uploaded files in one of my work projects in an automated mode to ensure they don't contain any malware. Using VirusTotal was not an option because of a) legal restrictions and data residency limitations b) scanning by hash-sums would not be sufficient because the majority of files are generated / modified by users. 
@@ -36,29 +38,27 @@ Configuration of API and Scanners is performed by passing the environment variab
 
 #### MalwareMultiScan.Api
 
-* `ConnectionStrings__Mongo=mongodb://localhost:27017` - MongoDB connection string.
+* `MONGO_ADDRESS=mongodb://localhost:27017` - MongoDB connection string.
 
-* `DatabaseName=MalwareMultiScan` - MongoDB collection name.
+* `MONGO_DATABASE=MalwareMultiScan` - MongoDB collection name.
 
-* `ConnectionStrings__RabbitMQ=host=localhost` - RabbitMQ connection string. See [EasyNetQ Wiki](https://github.com/EasyNetQ/EasyNetQ/wiki/Connecting-to-RabbitMQ) for details.
+* `REDIS_ADDRESS=localhost:6379` - Redis address for the distributed task queue.
 
-* `ResultsSubscriptionId=mms.results` - RabbitMQ subscription id for scan results. Should match with values defined for scanners.
+* `CONSUL_ADDRESS=http://localhost:8500` - Consul address for the service registration.
 
-* `MaxFileSize=52428800` - Maximum size of a file that can be handled for the file scanning. The size of the URL content is not verified.
-
-* `BackendsConfiguration=backends.yaml` - Path to the [backends.yaml](MalwareMultiScan.Api/backends.yaml) file.
+* `FILE_SIZE_LIMIT=52428800` - Maximum size of a file that can be handled for the file scanning. The size of the URL content is not verified. Set to 0 to disable the validation.
 
 #### MalwareMultiScan.Scanner
 
-* `ConnectionStrings__RabbitMQ=host=localhost` - RabbitMQ connection string. See [EasyNetQ Wiki](https://github.com/EasyNetQ/EasyNetQ/wiki/Connecting-to-RabbitMQ) for details.
+* `BACKEND_ID=dummy` - Id of a backend.
 
-* `ResultsSubscriptionId=mms.results` - RabbitMQ subscription id for scan results. Should match with values defined for scanners.
+* `REDIS_ADDRESS=localhost:6379` - Redis address for the distributed task queue.
 
-* `BackendType=Dummy` - A type of scanner backend used by the running instance. Should correspond to the [BackendType](MalwareMultiScan.Backends/Enums/BackendType.cs) enum.
+* `CONSUL_ADDRESS=http://localhost:8500` - Consul address for the service registration.
 
-* `MaxScanningTime=60` - Scan time limit. It is used not just for actual scanning but also for getting the file.
+* `MAX_SCANNING_TIME=60` - Scan time limit. It is used not just for actual scanning but also for getting the file.
 
-* `WorkerCount=4` - Number of workers for parallel scanning.
+* `WORKER_COUNT=4` - Number of workers for parallel scanning.
 
 #### MalwareMultiScan.Ui
 
@@ -66,13 +66,25 @@ Configuration of API and Scanners is performed by passing the environment variab
 
 ### API Endpoints
 
-* POST `/api/queue/url` with a `url` parameter passed via the form data.. Returns `201 Accepted` response with a [ScanResult](MalwareMultiScan.Api/Data/Models/ScanResult.cs) or `400 Bad Request` error.
+* POST `/api/queue/url` with a `url` parameter passed via the form data.. Returns `201 Accepted` response with a [ScanResult](MalwareMultiScan.Api/Data/ScanResult.cs) or `400 Bad Request` error.
 
-* POST `/api/queue/file` with a `file` parameter passed via the form data. Returns `201 Accepted` response with a [ScanResult](MalwareMultiScan.Api/Data/Models/ScanResult.cs) or `400 Bad Request` error.
+* POST `/api/queue/file` with a `file` parameter passed via the form data. Returns `201 Accepted` response with a [ScanResult](MalwareMultiScan.Api/Data/ScanResult.cs) or `400 Bad Request` error.
 
-* GET `/api/results/{result-id}` where `{result-id}` corresponds to the id value of a [ScanResult](MalwareMultiScan.Api/Data/Models/ScanResult.cs). Returns `200 OK` response with a [ScanResult](MalwareMultiScan.Api/Data/Models/ScanResult.cs) or `404 Not Found` error.
+* GET `/api/results/{result-id}` where `{result-id}` corresponds to the id value of a [ScanResult](MalwareMultiScan.Api/Data/ScanResult.cs). Returns `200 OK` response with a [ScanResult](MalwareMultiScan.Api/Data/ScanResult.cs) or `404 Not Found` error.
 
-Both `/api/queue/url` and `/api/queue/file` also accept an optional `callbackUrl` parameter with the http(s) URL in it. This URL will be requested by the POST method with JSON serialized [ScanResult](MalwareMultiScan.Api/Data/Models/ScanResult.cs) in a body on every update from scan backends.
+#### Callback URL
+
+Both `/api/queue/url` and `/api/queue/file` also accept an optional `callbackUrl` parameter with the http(s) URL in it. This URL will be requested by the POST method with JSON serialized [ScanResultMessage](MalwareMultiScan.Shared/Message/ScanResultMessage.cs) in a body on every update from scan backends. Query string will contain `id` parameter that corresponds to the id of the scan result and `backend` parameter with the id of backend which completed the scan.
+
+I.e. when you define `callbackUrl=http://localhost:1234/scan-results`, the POST request will be made to `http://localhost:1234/scan-results?id=123&backend=dummy` with a body
+
+```json
+{
+  "Status":1,
+  "Duration":5,
+  "Threats":["Malware.Dummy.Result"]
+}
+```
 
 ## Supported Scan Engines
 
@@ -91,11 +103,29 @@ More scan backends can be added in the future. Some of the popular ones do not h
 
 ## Components
 
+### Workflow
+
+1. On startup all [Scanners](MalwareMultiScan.Scanner) register themselves in [Consul](https://www.consul.io/) with a service name equal to `scanner` and the `BackendId` metadata field equal to the value of `BACKEND_ID` environment variable. They also register a TTL check and listen for [Hangfire](https://www.hangfire.io/) background job in a queue named under the `BackendId` metadata field.
+
+2. Third-party client triggers `/api/queue/url` or `/api/queue/file` of the [MalwareMultiScan.Api](MalwareMultiScan.Api).
+
+3. [MalwareMultiScan.Api](MalwareMultiScan.Api) sends a query to [Consul](https://www.consul.io/) and receives the list of alive scan backends with the service name `scanner`.
+
+4. [MalwareMultiScan.Api](MalwareMultiScan.Api) schedules a [Hangfire](https://www.hangfire.io/) background job in a queue named under the `BackendId` metadata field.
+
+5. [Scanners](MalwareMultiScan.Scanner) picks up a job from queue, starts the scan and sends result back to the `default` queue of [Hangfire](https://www.hangfire.io/).
+
+6. [MalwareMultiScan.Api](MalwareMultiScan.Api) picks a job from the default` queue of [Hangfire](https://www.hangfire.io/) and updates the state of the scan.
+
+7. If callback URL was specified during the step #2, [MalwareMultiScan.Api](MalwareMultiScan.Api) triggers a HTTP POST request to the specified URL. See [Callback URL](#callback-url) for details.
+
 ### Prerequisites
 
-* **MongoDB** of version 3.x. Used for storing scan results and files in GridFS. The communication is happening through the [official C#/.NET driver](https://docs.mongodb.com/drivers/csharp).
+* **MongoDB** of version 3.x or above. Used for storing scan results and files in GridFS. The communication is happening through the [official C#/.NET driver](https://docs.mongodb.com/drivers/csharp).
 
-* **RabbitMQ** of version 3.x. Used for IPC and scan tasks queueing. The communication is happening through the [EasyNetQ](https://github.com/EasyNetQ/EasyNetQ) library.
+* **Redis** of version 5.x or above. Used for tasks queueing. The communication is happening through the [Hangfire](https://www.hangfire.io/) library.
+
+* **Consul** of version 1.8.x or above. Used for service registration of scan backends. 
 
 * **Docker** and **docker-compose** running under Windows (in Linux containers mode), Linux, or OSX. Docker Compose is needed only for test / local deployments.
 
@@ -103,9 +133,11 @@ More scan backends can be added in the future. Some of the popular ones do not h
 
 ### Parts
 
-* [MalwareMultiScan.Api](MalwareMultiScan.Api) - Simple ASP.NET Core WebApi for queueing files & urls for the scan and returning the result. Also acts as a receiver of scan results from the scanning backend nodes. See [Dockerfile](MalwareMultiScan.Api/Dockerfile). Configuration of available backends is performed via the [backends.yaml](MalwareMultiScan.Api/backends.yaml) location passed via the `BackendsConfiguration` environment variable. 
+* [MalwareMultiScan.Api](MalwareMultiScan.Api) - Simple ASP.NET Core WebApi for queueing files & urls for the scan and returning the result. Also acts as a receiver of scan results from the scanning backend nodes. See [Dockerfile](MalwareMultiScan.Api/Dockerfile).
 
-* [MalwareMultiScan.Backends](MalwareMultiScan.Backends) - Shared components between API and Worker. Includes Dockerfiles and implementation classes for third-party vendor scan backends.
+* [MalwareMultiScan.Backends](MalwareMultiScan.Backends) - Scan backends logic. Includes Dockerfiles and implementation classes for third-party vendor scan backends.
+
+* [MalwareMultiScan.Shared](MalwareMultiScan.Shared) - Shared components.
 
 * [MalwareMultiScan.Scanner](MalwareMultiScan.Scanner) - .NET Core Worker service subscribes to messages corresponding to the backend id, then fires up scanning command-line utility, and parses the output. See [Dockerfile](MalwareMultiScan.Scanner/Dockerfile). The image of MalwareMultiScan.Scanner acts as a base image for the rest of the scan backends. Check Dockerfiles from the [table above](#supported-scan-engines) for details.
 
