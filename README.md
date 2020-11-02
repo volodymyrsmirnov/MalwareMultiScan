@@ -80,9 +80,9 @@ I.e. when you define `callbackUrl=http://localhost:1234/scan-results`, the POST 
 
 ```json
 {
-  "Status":1,
-  "Duration":5,
-  "Threats":["Malware.Dummy.Result"]
+  "Status": 1,
+  "Duration": 5,
+  "Threats": ["Malware.Dummy.Result"]
 }
 ```
 
