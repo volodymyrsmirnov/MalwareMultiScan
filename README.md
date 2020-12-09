@@ -6,10 +6,6 @@ Self-hosted [VirusTotal](https://www.virustotal.com/) / [OPSWAT MetaDefender](ht
 
 ![MalwareMultiScan UI](.github/img/malware-multi-scan-ui.gif)
 
-**[Check out the demo UI](http://199.247.24.56:8888/) with ClamAV, Dummy, and Windows Defender scan backends**. 
-
-The demo is running on a cheap Vultr node, so it might get slow or unavailable occasionally. 
-
 **IMPORTANT**: version 1.5 introduces breaking changes in containers configuration and docker-compose.yaml layout. Please see [releases](https://github.com/mindcollapse/MalwareMultiScan/releases) page and changelog of [docker-compose.yaml](https://github.com/mindcollapse/MalwareMultiScan/commits/master/docker-compose.yaml) and [README.md](https://github.com/mindcollapse/MalwareMultiScan/commits/master/README.md) for the additional details. 
 
 ## Introduction
